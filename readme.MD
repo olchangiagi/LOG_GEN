@@ -89,3 +89,54 @@
     - 스마트 팩토리: 24시간 비교적 일정, 교대/주말 변화
     - 게임: 저녁/야간 피크, 주말 증가세
     - 증가세를 적용하여 피크시 트래픽을 10배, 5배 등 가중 할 수 있음.
+
+# 오염 데이터
+-비율 지정 -> 0.03 -> 각 이벤트에서 3% 비율로 오염 데이터 생산 -> ETL에서 clean 작업 처리
+- 오염 유형
+```
+missing_field
+null_required
+wrong_type
+invalid_timestamp
+numeric_outlier
+invalid_enum
+negative_latency
+duplicate
+malformed_json
+...etc
+```
+
+# 로그 발생기의 데이터 파이프라인상의 포지션 
+```
+            Data Source Simulator
+            Fargate + Python/Faker
+                    │ <- (다양한 출력 방향으로 전개)
+    ┌─────────────────┼─────────────────┐
+    │                 │                 │
+    ▼                 ▼                 ▼
+    S3              Kinesis            Kafka
+File/Batch         AWS Stream       Event Stream
+    └─────────────┬───┴─────────────────┘ 
+                  ▼
+             Bronze Layer 
+                  │
+            ETL / ELT Processing 
+            Pandas / Polars / Spark 
+                  │
+                Silver 
+                  │ 
+                Gold 
+                  │ 
+        Athena / OpenSearch / BI
+```
+
+# generator 구조 및 설치
+```
+~/generator
+L app
+    L domains
+        L *.py          : 4개 도메인에 대한 로그 생성 메인 제네레이터 함수
+    L *.py              : main.py 로그 생성기 메인 코드, 각종 기능 처리
+L Dockerfile            : 컨테이너 기반이 되는 이미지 생성용, ECR 푸시됨
+L requirement.txt       : 필요 패키지
+```
