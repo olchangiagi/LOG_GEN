@@ -140,3 +140,6 @@ L app
 L Dockerfile            : 컨테이너 기반이 되는 이미지 생성용, ECR 푸시됨
 L requirement.txt       : 필요 패키지
 ```
+
+- 설치
+pip install -r requirements.txt
