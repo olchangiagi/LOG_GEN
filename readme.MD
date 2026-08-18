@@ -24,3 +24,68 @@
 - ecr.tf        : 로그 생성기 (파이썬 코드) -> Docker 이미지로 생성하여 저장할 저장소
 - ecs.tf        : ECS 클러스터와 Fargate Task Definition 등이 구동되는 실행 환경 제공 -> 일회성 (상시 운영x)
 - outputs.tf    : 생성 후 각종 정보 출력
+
+# 인프라 구성
+```
+> ~/infra
+> terraform init
+> terraform fmt
+> terraform validate
+> terraform plan
+> terraform apply
+```
+
+# 로그 생성기 (~/generator)
+## 로그 포멧 (공통 포멧)
+- 서비스 요청에 따른 처리가 완료된 후 로그로 기록하는 최종 필드를 포함한 데이터 셈플
+```
+{
+  "schema_version": "1.0",
+  "record_type": "application_log",
+  "event_id": "...",
+  "trace_id": "...",
+  "run_id": "...",
+  "occurred_at": "2026-08-12T16:30:11.123+09:00",
+  "generated_at_utc": "2026-08-12T07:30:11.123+00:00",
+  "domain": "ecommerce",
+  "event_type": "order_created",
+  "service": {...},
+  "client": {...},
+  "request": {
+    "method": "POST",
+    "path": "/api/orders",
+    "request_bytes": 1234
+  },
+  "response": {
+    "status_code": 201,
+    "latency_ms": 287,
+    "response_bytes": 3590
+  },
+  "data": {... domain specific ...} <- 도메인별로 커스텀 구성
+}
+```
+
+## 지원 이벤트 및 이벤트 정의
+- domain으로 카테고리 설정
+- 각 도메인들을 이벤트 비율 조정, 시간대별 발생량 조절, 주요 필드 설정, 각각에 대한 지연시간 설정
+    - 실제 도메인의 인사이트를 반영하여 설계
+
+| DOMAIN | 주요 이벤트 예시 |
+|---|---|
+| `ecommerce` | product_view, search, add_to_cart, checkout, order_created, payment_completed |
+| `finance` | account_login, balance_inquiry, card_payment, transfer, deposit, withdrawal |
+| `smartfactory` | sensor_reading, equipment_state, quality_inspection, alarm, maintenance_event |
+| `game` | login, session_heartbeat, match_started, match_finished, item_purchase, quest_completed |
+
+# 살제와 유사한 발생 간격
+- 고려 조건
+    - 시간대별 가중치
+    - 평일/주말 가중치
+    - 간혈적 등장 부스터(트래픽 상승)
+
+- ex
+    - 이커머스: 점심/저녁 시간대 증가, 주말 감소
+    - 금융: 평일 주간시간 증가, 주말 감소
+    - 스마트 팩토리: 24시간 비교적 일정, 교대/주말 변화
+    - 게임: 저녁/야간 피크, 주말 증가세
+    - 증가세를 적용하여 피크시 트래픽을 10배, 5배 등 가중 할 수 있음.
