@@ -143,3 +143,66 @@ L requirement.txt       : 필요 패키지
 
 - 설치
 pip install -r requirements.txt
+
+# script
+- setup.sh/bat
+```
+  Terraform init
+      ↓
+  Terraform apply
+      ↓
+  ECR Repository 생성
+  ECS/Fargate 관련 인프라 생성
+      ↓
+  AWS ECR 로그인
+      ↓
+  Docker 이미지 Build
+      ↓
+  ECR에 latest 이미지 Push
+```
+
+- run-local.sh/bat
+- 로컬 pc에서 로그 생성(로컬 테스트)
+```
+# 문법
+scripts\run-local.bat [DOMAIN] [DURATION] [RPS] [CORRUPTION] [OUTPUT] [TIME_SCALE]
+
+# 샘플
+scripts\run-local.bat finance 4 5 0.05 both 1
+
+# 해석 
+finance 도메인 로그 생성
+↓
+60초 동안 실행
+↓
+평균 5 RPS 속도로 생성
+↓
+5% 오염 데이터를 구성
+↓
+출력은 stdout, file, both
+file은 output 폴더 내부에 기록
+↓
+시간 배율 조절은 1
+```
+
+- run-generator.bat/sh
+    - AWS fargate에서 진행
+```
+# 전체 옵션
+scripts\run-generator.bat [DOMAIN] [DURATION] [BASE_RPS] [CORRUPTION_RATE] [TASK_COUNT] [REGION] [TIME_SCALE]
+
+# 흐름
+로컬 PC 명령 수행
+↓
+AWS ecs run-task 가동
+↓
+ECS Cluster
+↓
+Fargate task 작동
+↓
+Docker Container
+↓
+Python 로그 생성기 작동
+↓
+CloudWatch에 로그 저장
+```
