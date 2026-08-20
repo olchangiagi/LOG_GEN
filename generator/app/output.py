@@ -61,13 +61,25 @@ class JsonlOutput:
             line = line[:cut]
 
         # stdout 출력 모드가 포함되면 콘솔로 로그 출력
+        # 터미널 출력 OR cloudwatch 전송 -> 개발시 디버깅, 관리, 운용 용도
         if self.mode in {"stdout", "both"}:
             # stdout에 즉시 출력해 컨테이너 로그로 전달
             print(line, flush=True)
+
         # 파일이 실제로 열려 있을 때만 파일 작업 수행
+        # 파일 출력 -> 개발시 디버깅, 관리, 운용 용도, 데이터 확인용
         if self._handle is not None:
             # 파일 출력 모드에서는 이벤트 한 건을 한 줄로 기록
             self._handle.write(line + os.linesep)
+
+        # [브론즈 추가] kinesis 전송
+        if self._kinesis is not None:
+            self._kinesis.put_record(
+                StreamName      = self.kinesis_stream_name,
+                Data            = (line + "\n").encode('utf-8'),
+                # 같은 도메인으로 파티션키 활용
+                PartitionKey    = str(event.get("domain", "default"))
+            )
 
     # 열려 있는 로그 파일 핸들을 안전하게 닫음
     def close(self) -> None:
