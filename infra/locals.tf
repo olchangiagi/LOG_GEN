@@ -11,4 +11,9 @@ locals {
   task_family     = "${var.project_name}-task"
   repository_name = "${var.project_name}-repo"
   log_group_name  = "/ecs/${var.project_name}"
+
+  # [브론즈 추가]
+  kinesis_stream_name = "${var.project_name}-kinesis"
+  firehose_name = "${var.project_name}-firehose"
 }
+
