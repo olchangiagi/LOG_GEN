@@ -12,18 +12,28 @@ from pathlib import Path
 # 파일 핸들의 타입을 명확하게 지정
 from typing import TextIO
 
+# [브론즈 추가]
+# amazon sdk 패키지
+import boto3
 
 # JSONL 형식의 stdout/파일 출력을 담당하는 클래스
 class JsonlOutput:
     # 출력 방식과 로그 파일 경로를 초기화
-    def __init__(self, mode: str, log_file: str):
+    # [브론즈 추가]클래스 생성자 -> 객체 생성, 인스턴스 맴버 변수 초기화
+    def __init__(self, mode: str, log_file: str, kinesis_enabled: bool = False, kinesis_stream_name: str = ""):
         # stdout/file/both 중 선택한 출력 모드 저장
         self.mode = mode
         # 파일 출력 시 사용할 경로 저장
         self.log_file = log_file
+
+        # [브론즈 추가] 인스턴스 맴버 변수 초기화 코드
+        self.kinesis_enabled = kinesis_enabled
+        self.kinesis_stream_name = kinesis_stream_name
+        # kinesis 서비스 객체
+        self._kinesis = None
+
         # 아직 열리지 않은 파일 핸들을 None으로 초기화
         self._handle: TextIO | None = None
-
         # 파일 출력이 필요한 모드일 때만 파일을 준비
         if mode in {"file", "both"}:
             # 문자열 파일 경로를 Path 객체로 변환
@@ -32,6 +42,10 @@ class JsonlOutput:
             path.parent.mkdir(parents=True, exist_ok=True)
             # 기존 파일 뒤에 UTF-8 라인 버퍼링 방식으로 이어쓰기
             self._handle = path.open("a", encoding="utf-8", buffering=1)
+
+        # [브론즈 추가], kinesis 객체 생성 -> kinesis 접근 가능
+        if self.kinesis_enabled:
+            self._kinesis = boto3.client("kinesis")
 
     # 이벤트 한 건을 JSON 문자열로 변환해 지정된 출력 대상으로 전송
     def emit(self, event: dict, malformed_json: bool = False) -> None:

@@ -102,6 +102,9 @@ Faker
 boto3 # AWS SKD 패키지
 ```
 
-- 
+- config.py
+    - ecs에서 세팅한 환경변수 전달
+- output.py
+    - 출력 방향에 kinesis 추가
 
 # .bat, .shell 검토 
