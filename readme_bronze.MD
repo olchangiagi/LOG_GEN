@@ -106,5 +106,7 @@ boto3 # AWS SKD 패키지
     - ecs에서 세팅한 환경변수 전달
 - output.py
     - 출력 방향에 kinesis 추가
+- main.py
+    - 생성자 매개변수 조정
 
 # .bat, .shell 검토 
