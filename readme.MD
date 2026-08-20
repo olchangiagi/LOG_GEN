@@ -160,6 +160,8 @@ pip install -r requirements.txt
       ↓
   ECR에 latest 이미지 Push
 ```
+# 실행 
+./scripts/setup.bat
 
 - run-local.sh/bat
 - 로컬 pc에서 로그 생성(로컬 테스트)
@@ -205,4 +207,33 @@ Docker Container
 Python 로그 생성기 작동
 ↓
 CloudWatch에 로그 저장
+```
+
+# 명령어 샘플
+```
+  scripts\run-generator.bat ecommerce 2 5 0.05 1 ap-northeast-2 1    
+  ---
+  ============================================================
+  Fargate synthetic log generator
+  ============================================================
+  Run ID          : loggen-2251219129-932
+  Domain          : ecommerce
+  Duration        : 2s
+  Base RPS        : 5
+  Time scale      : 1
+  Corruption rate : 0.05
+  Tasks           : 1
+  Region          : ap-northeast-2
+  Cluster         : de-ai-25-loggen-cluster
+
+  -----------------------------------------------------------------------------------------------------------       
+  |                                                 RunTask                                                 |
+  +---------------------------------------------------------------------------------------------------------+
+  |  arn:aws:ecs:ap-northeast-2:827913617635:task/de-ai-25-loggen-cluster/c79e8eb92b65483cb216e63afcee22d8  |
+  +---------------------------------------------------------------------------------------------------------+
+
+
+  Task started.
+  Follow generated logs:
+    aws logs tail "/ecs/de-ai-25-loggen" --follow --region "ap-northeast-2"
 ```
