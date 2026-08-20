@@ -109,4 +109,74 @@ boto3 # AWS SKD 패키지
 - main.py
     - 생성자 매개변수 조정
 
+- 코드 수정 -> 이미지 수정 -> ecr 업데이트 -> setup.bat/sh
+```
+docker build --no-cache --platform linux/amd64 -t ...
+```
+
 # .bat, .shell 검토 
+
+# 브론즈 데이터 생성 
+- 명령 옵션
+```
+ecommerce       도메인
+5               5초 실행
+5               기본 5 RPS
+0.05            오염 데이터 5%
+1               Fargate Task 1개
+ap-northeast-2  서울 리전
+1               Time Scale 1배
+```
+- 명령
+- 25건 로그 생성
+- cloudwatch 로그 기록됨 (stdout 설정이 기본)
+- kinesis -> firehose -> s3 기록됨 (ecs 설정에 환경변수로 세팅되어 있음)
+- s3에서 로그 발생 후 언제 확인 가능한가? -> 약간의 텀 존재, 1분 이후 혹은 1Mib 초과 이후 확인 가능 
+
+```
+scripts/run-generator.bat ecommerce 5 5 0.05 1 ap-northeast-2 1
+```
+- 결과
+```
+============================================================
+Fargate synthetic log generator
+============================================================
+Run ID          : loggen-1676725301-18496
+Domain          : ecommerce
+Duration        : 5s
+Base RPS        : 5
+Time scale      : 1
+Corruption rate : 0.05
+Tasks           : 1
+Region          : ap-northeast-2
+Cluster         : de-ai-08-loggen-cluster
+
+-----------------------------------------------------------------------------------------------------------                                                    
+|                                                 RunTask                                                 |
++---------------------------------------------------------------------------------------------------------+
+|  arn:aws:ecs:ap-northeast-2:827913617635:task/de-ai-08-loggen-cluster/43dbcedfe9824376a598467e2e51d883  |
++---------------------------------------------------------------------------------------------------------+
+
+
+Task started.
+Follow generated logs:
+  aws logs tail "/ecs/de-ai-08-loggen" --follow --region "ap-northeast-2"
+```
+
+- 실시간 로그 확인
+```
+aws logs tail "/ecs/de-ai-08-loggen" --follow --region "ap-northeast-2"
+```
+    - 결과
+    ```
+    ...
+    2026-08-20T05:51:27.441000+00:00 generator/log-generator/43dbcedfe9824376a598467e2e51d883 {"schema_version":"1.0","record_type":"application_log","event_id":"f94ec342-41de-4de2-a07b-171a83c0ade7","trace_id":"9ae88bf33d7945f1b5b895705000f2dd","run_id":"loggen-1676725301-18496","occurred_at":"2026-08-20T14:51:27.441+09:00","generated_at_utc":"2026-08-20T05:51:27.441+00:00","domain":"ecommerce","event_type":"add_to_cart","service":{"name":"commerce-api","environment":"simulation","instance_id":"sim-11"},"client":{"ip":"176.63.223.77","user_agent":"WhitelabelApp/4.8.1 Android","device_id":"eef7feeab7da4c67"},"request":{"method":"POST","path":"/api/cart/items","request_bytes":1054},"response":{"status_code":201,"latency_ms":98,"response_bytes":8558},"data":{"user_id":"usr_284322","session_id":"413218e12e6746a78bdd","product_id":"prd_74182","category":"home","quantity":1,"unit_price":272400,"currency":"KRW","campaign":null}}
+    ```
+
+# jsonl -> GZIP 변경하여 저장
+- 동일 로그 발생 -> 최종 결과를 GZIP으로 저장
+- 조치
+    - 수정
+    - 인프라 반영
+    - 로그 발생
+    - s3 확인
