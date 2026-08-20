@@ -57,3 +57,35 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+# [브론즈 추가]
+# Kinesis Data Streams : KDS
+# 성능 영향 -> shard 개수, 데이터 보관 기간(retention)
+# 프로비저닝 방식으로 구성한다 -> 샤드수 직접 지정 <-> 온디맨드 (자율 구성)
+variable "kinesis_shard_count" {
+  description = "KDS's shard count"
+  type = number
+  default = 1
+}
+
+# 전송되지 않은 데이터는 하루만 보관
+variable "kinesis_retention_hour" {
+  description = "KDS's retention period in hours"
+  type = number
+  default = 24
+}
+
+# Amazon Data Firehose : ADF
+# 1~128MiB, 5MiB 권장
+variable "firehose_buffer_size" {
+  description = "해당 크기만큼 데이터가 쌓이면 전송"
+  type = number 
+  default = 1
+}
+
+# 0~900초 지원, 300초 권장
+variable "firehose_buffer_interval" {
+  description = "해당 시간만큼 데이터가 쌓으면 강제 전송"
+  type = number
+  default = 60
+}

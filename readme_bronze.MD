@@ -84,9 +84,9 @@ Fargate → Kinesis → Firehose → S3 확인 (jsonl, gzip)
 │  │  locals.tf         
 │  │  logs.tf           
 │  │  outputs.tf        
-│  │  provider.tf       
+│  │  provider.tf       # 1. 수정
 │  │  sg.tf             
-│  │  variables.tf      
+│  │  variables.tf      # 2. 수정
 │  │  version.tf        # 유지
 │  │  vpc.tf            # 유지
 │  │
