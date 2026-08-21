@@ -148,10 +148,10 @@ variable "flink_source_init_position" {
   # 변수의 값으로 올 수 있는 내용들을 제약
   validation {
     # 오직 2가지만 허가됨
-    condition     = contains([
-      "LATEST", 
+    condition = contains([
+      "LATEST",
       "TRIM_HORIZON"
-      ], var.flink_source_init_position)
-      error_message = "flink_source_init_position is only LATEST or TRIM_HORIZON"
+    ], var.flink_source_init_position)
+    error_message = "flink_source_init_position is only LATEST or TRIM_HORIZON"
   }
 }

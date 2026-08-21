@@ -21,7 +21,7 @@ resource "aws_iam_role" "flink" {
 # 실버 kinesis 쓰기 (출력, outputstream)
 # s3에 flink의 애플리케이션 zip 파일 읽기 -> 실행할 수 있음
 # CloudWatch Logs에 로그 기록
-data "aws_iam_policy_document" "firehose_s3" {
+data "aws_iam_policy_document" "flink" {
   # kinesis 읽기 권한 관련
   statement {
     sid    = "ReadBronzeKinesis"
@@ -54,8 +54,8 @@ data "aws_iam_policy_document" "firehose_s3" {
     sid    = "ReadFlinkCode"
     effect = "Allow"
     actions = [
-        "s3:GetObject",
-        "s3:GetObjectVersion"
+      "s3:GetObject",
+      "s3:GetObjectVersion"
     ]
     resources = [
       "${aws_s3_bucket.data.arn}/flink/*"
@@ -73,21 +73,21 @@ data "aws_iam_policy_document" "firehose_s3" {
     ]
   }
   # 로그 쓰기
-    statement {
-        sid    = "WriteFlinkLog"
-        effect = "Allow"
-        actions = [
-        "logs:PutLogEvents"
-        ]
-        resources = [
-        "${aws_cloudwatch_log_group.flink.arn}:*"
-        ]
-    }
+  statement {
+    sid    = "WriteFlinkLog"
+    effect = "Allow"
+    actions = [
+      "logs:PutLogEvents"
+    ]
+    resources = [
+      "${aws_cloudwatch_log_group.flink.arn}:*"
+    ]
+  }
 }
 
 
 # 위에서 만든 기본 role에 아래에서 조회한 정책 부여
-resource "aws_iam_role_policy" "firehose" {
+resource "aws_iam_role_policy" "flink" {
   name   = "${var.project_name}-flink-policy"
   role   = aws_iam_role.flink.id
   policy = data.aws_iam_policy_document.flink.json
@@ -106,7 +106,7 @@ data "aws_iam_policy_document" "firehose_silver_assume" {
   }
 }
 resource "aws_iam_role" "firehose_silver" {
-  name = "${var.project_name}-firehose-silver-role"
+  name               = "${var.project_name}-firehose-silver-role"
   assume_role_policy = data.aws_iam_policy_document.firehose_silver_assume.json
 }
 
