@@ -37,45 +37,52 @@ data "aws_iam_policy_document" "firehose_s3" {
       aws_kinesis_stream.logs.arn
     ]
   }
+  # silver level에 존재하는 kinesis로 데이터 전송(쓰기, 출력스트림)에 대한 권한
   statement {
     sid    = "WriteSilverKinesis"
     effect = "Allow"
     actions = [
-      "kinesis:DescribeStream",
-      "kinesis:GetShardIterator",
-      "kinesis:GetRecords",
-      "kinesis:ListShards"
+      "kinesis:PutRecord",
+      "kinesis:PutRecords"
     ]
     resources = [
-      aws_kinesis_stream.logs.arn
+      aws_kinesis_stream.silver.arn
     ]
   }
+  # s3에 존재하는 flink application 코드 (zip 형태로 구성)
   statement {
     sid    = "ReadFlinkCode"
     effect = "Allow"
     actions = [
-      "kinesis:DescribeStream",
-      "kinesis:GetShardIterator",
-      "kinesis:GetRecords",
-      "kinesis:ListShards"
+        "s3:GetObject",
+        "s3:GetObjectVersion"
     ]
     resources = [
-      aws_kinesis_stream.logs.arn
+      "${aws_s3_bucket.data.arn}/flink/*"
     ]
   }
   statement {
-    sid    = "DescribeFlinklog"
+    sid    = "DescribeFlinkLog"
     effect = "Allow"
     actions = [
-      "kinesis:DescribeStream",
-      "kinesis:GetShardIterator",
-      "kinesis:GetRecords",
-      "kinesis:ListShards"
+      "logs:DescribeLogGroups",
+      "logs:GetShardLogStreams"
     ]
     resources = [
-      aws_kinesis_stream.logs.arn
+      "*"
     ]
   }
+  # 로그 쓰기
+    statement {
+        sid    = "WriteFlinkLog"
+        effect = "Allow"
+        actions = [
+        "logs:PutLogEvents"
+        ]
+        resources = [
+        "${aws_cloudwatch_log_group.flink.arn}:*"
+        ]
+    }
 }
 
 
