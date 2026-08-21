@@ -119,3 +119,8 @@ export PATH="$JAVA_HOME/bin:$PATH"
 java -version
 mvn -version
 ```
+
+- 빌드
+```
+./scripts/build-flink.bat
+```

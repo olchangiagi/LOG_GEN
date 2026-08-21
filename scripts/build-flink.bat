@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 setlocal
 
 set "ROOT=%~dp0.."
@@ -6,7 +7,7 @@ set "FLINK_DIR=%ROOT%\flink"
 
 where mvn >nul 2>nul
 if errorlevel 1 (
-  echo ERROR: Maven(mvn)이 필요합니다. JDK 11 + Maven을 설치한 뒤 다시 실행하세요.
+  echo ERROR: Maven mvn이 필요합니다. JDK 11 + Maven을 설치한 뒤 다시 실행하세요.
   exit /b 1
 )
 

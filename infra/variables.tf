@@ -106,7 +106,7 @@ variable "silver_kinesis_retention_hour" {
 }
 
 # PyFlink 버전(런타임 환경의 버전) 1.20 사용
-variable "flink_runtime_enviroment" {
+variable "flink_runtime_environment" {
   description = "Managed Service for Apache Flink의 런타임 환경 버전"
   type        = string
   default     = "FLINK-1_20"
