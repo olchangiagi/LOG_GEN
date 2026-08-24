@@ -178,6 +178,9 @@ def main() -> None:
     output_props = _property_map(properties, "OutputStream0")
     # Runtime Property에서 Silver 출력 Kinesis 설정 그룹인 OutputStream0이름의 키네시스 정보 획득. silver 출력
 
+    # [REJECT] 비정상 데이터 출력용 kinesis 설정
+    reject_props = _property_map(properties, "RejectStream0")
+
     input_stream_arn = input_props["stream.arn"]
     # 입력 Kinesis Data Stream의 ARN을 읽는다.(입력시 어디서 부터 읽을 것인지 등 정보 로드)
     # 이 스트림은 로그 생성기가 데이터를 전송하는 Bronze/Raw Kinesis Stream이다.
@@ -190,6 +193,9 @@ def main() -> None:
     # 정제 결과를 기록할 Silver Kinesis Data Stream ARN을 읽는다.
     output_region = output_props["aws.region"]
     # Silver Kinesis Stream이 존재하는 AWS Region을 읽는다.
+    # [REJECT]
+    reject_stream_arn = reject_props["stream.arn"]
+    reject_region = reject_props["aws.region"]
 
     table_env.create_temporary_system_function("clean_event", clean_event)
     # Python 함수 clean_event를 Flink SQL에서 clean_event(...) 이름으로 사용할 수 있도록 등록한다.
