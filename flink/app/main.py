@@ -293,12 +293,16 @@ def main() -> None:
         """
     )
 
-    result = table_env.execute_sql(
+    # [REJECT] 단일 insert 대신 정상/비정상 sink 처리하는 하나의 job으로 statement set 구성
+    statement_set = table_env.create_statement_set()
+
+    # result = table_env.execute_sql(
         # 아래 INSERT INTO SQL을 실행하면 실제 Streaming Job이 시작된다.
         # bronze_stream -> 쿼리 -> 정제된 데이터 획득(cleaned_payload) -> 체킹 -> silver_stream으로 저장
         # 잘못된 데이터는 버림 -> 왜 잘못되었는가는 분석하지 않음(데이터가 오직 bronze에만 남아있음)
         # 향후 잘못 구성된 데이터를 모아 추후 체크(배치 프로세싱 분석), 브론즈 -> 배치 프로세싱으로 추출해도 가능
-
+    # [REJECT]
+    statement_set.add_insert_sql (
         """
         INSERT INTO silver_stream
         SELECT cleaned_payload
@@ -308,13 +312,24 @@ def main() -> None:
         )
         WHERE cleaned_payload IS NOT NULL
         """
-        # 내부 SELECT: bronze_stream의 각 payload에 clean_event UDF를 적용한다.
-        # AS cleaned_payload: UDF 결과에 cleaned_payload라는 임시 컬럼명을 붙인다.
-        # 외부 SELECT: 정제 결과 컬럼만 선택한다.
-        # WHERE ... IS NOT NULL: 정제 실패 레코드를 제외한다.
-        # INSERT INTO silver_stream: 살아남은 정제 레코드를 Silver Kinesis로 지속 전송한다.
     )
-    # execute_sql()이 반환한 TableResult를 result 변수에 저장한다.
+
+    # [REJECT] 오염 데이터 저장, 검사 -> 해당되는 데이터만 전송
+    statement_set.add_insert_sql (
+        """
+        INSERT INTO rejected_stream
+        SELECT rejected_payload
+        FROM (
+            SELECT reject_event(payload) AS rejected_payload
+            FROM bronze_stream
+        )
+        WHERE rejected_payload IS NOT NULL
+        """
+    )
+
+
+    # [REJECT] 두 개의 sink를 병렬처리
+    result = statement_set.execute()
 
     if IS_LOCAL:
         # AWS Managed Flink에서는 서비스가 Job 수명주기를 관리하므로 별도의 wait가 필요하지 않다.
