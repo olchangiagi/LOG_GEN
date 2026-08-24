@@ -48,6 +48,7 @@ def clean_event_payload(payload: Any) -> Optional[str]:
     # 위 docstring은 현재 Silver 계층에서 적용하는 최소 정제 정책을 명확하게 정의한다.
     # 중요한 점은 "잘못된 데이터를 삭제한다"가 아니라 Bronze에는 원본을 보존하고 Silver에서만 제외한다는 것이다.
 
+    # 데이터에 문제가 있으면 -> None 처리
     if payload is None:
         # 입력 자체가 없으면 JSON으로 처리할 데이터가 없으므로 즉시 실패 처리한다.
 
@@ -88,6 +89,7 @@ def clean_event_payload(payload: Any) -> Optional[str]:
         return None
         # 파싱할 수 없는 데이터는 Silver 정제 대상에서 제외한다.
 
+    # 파싱 결과 검사, dict 타입이 아니면 None
     if not isinstance(event, dict):
         # JSON 자체는 유효하더라도 최상위 구조가 Object인지 확인한다.
         # 예: [] 배열, "abc" 문자열, 123 숫자 등은 유효한 JSON이지만 현재 Silver 이벤트 규칙에는 맞지 않는다.
@@ -98,11 +100,15 @@ def clean_event_payload(payload: Any) -> Optional[str]:
     # 최상위 null 값을 가진 필드를 제거한다.
     # 예: {"user_id": 1, "email": null} -> {"user_id": 1}
     # 현재 단계에서는 중첩 객체 내부의 null까지 재귀적으로 제거하지 않고 최상위 필드만 정리한다.
+    # 딕셔너리 컴프리핸션
+    # 값이 없는 컬럼을 배제
     cleaned = {key: value for key, value in event.items() if value is not None}
     # event의 key/value를 순회하면서 value가 None이 아닌 항목만 새로운 dict인 cleaned에 담는다.
 
     # Silver 처리 메타데이터를 원본 비즈니스 필드와 분리하기 위해 "_silver" 객체 아래에 묶는다.
     # 이렇게 하면 ecommerce, finance 등의 기존 필드 이름과 충돌할 가능성을 줄일 수 있다.
+    # 전처리 작업 -> 파생변수 추가
+    # 딕셔너리에 _silver 키를 추가, 값으로 dict를 배치
     cleaned["_silver"] = {
         # 정제된 이벤트에 Silver 계층 자체의 처리 정보를 추가한다.
 
@@ -121,6 +127,7 @@ def clean_event_payload(payload: Any) -> Optional[str]:
     }
     # _silver 메타데이터 객체 생성을 종료한다.
 
+    # Silver에 저장하기 위해 json 덤프 -> 문자열
     return json.dumps(
         # Python dict인 cleaned를 다시 Kinesis로 전송 가능한 JSON 문자열로 직렬화한다.
 
