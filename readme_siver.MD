@@ -124,3 +124,27 @@ mvn -version
 ```
 ./scripts/build-flink.bat
 ```
+
+# 확인 
+- 실시간 스트리밍 데이터 처리 관점
+    - Silver level 추가 부분
+        - flink 앱 코드 확인
+            - 추후 필요시 코드 업그레이드(기능 추가 부여)
+        - 현재는 오염된 데이터 삭제(별도 보관(저장) -> 추후 해당 원인 분석(확장))
+        - 저장데이터 -> jsonl(gzip) -> parquet 저장(Glue 사용)
+        - flink 역할 -> lambda 대체(차이점 이해)
+
+    - 실버 -> 골드 추가
+        - flink or lambda 사용 가능 -> 최종 목표 형태로 가공
+        - 중간 과정 동일
+        - 최종 s3 적제(parquet, opensearch)
+    - 대시보드
+        - s3 -> athena 질의, opensearch 질의 -> 대시보드상 실시간 모니터링 데이터 조회에 응답가능
+
+- 로그 생성기 -> kinesis -> firehose -> s3(bronze) 저장
+    - 배치 프로세싱 (airflow 기반) + 메달리온 아키텍처
+        - 특정 주기 단위로 airflow 작동 -> bronze -> silver -> gold -> 최종 산출물 (대시보드, 래포트 등) 구성
+
+- Kafka (뒤에서 확인)
+- ELK, EFK
+- Step Function, eventbridge

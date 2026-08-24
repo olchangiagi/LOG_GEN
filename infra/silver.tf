@@ -1,14 +1,11 @@
-# silver layer에서 사용되는 kinesis
+# 실버 레이어 에서 사용되는 kinesis
 # flink에서 전송된 데이터를 획득 -> firehose로 전송
 resource "aws_kinesis_stream" "silver" {
   name             = local.silver_kinesis_stream_name
   shard_count      = var.silver_kinesis_shard_count
   retention_period = var.silver_kinesis_retention_hour
 
-  # 구성 방식
   stream_mode_details {
-    # 프로비저닝 모드로 구성 -> 샤드 수 직접 지정
-    # (부족하면 성능 저하, 과하면 비용 과대 -> 츶겅 데이터가 없으면 온디맨드로 감)
     stream_mode = "PROVISIONED"
   }
 
@@ -17,7 +14,7 @@ resource "aws_kinesis_stream" "silver" {
   }
 }
 
-# silver layer의 kinesis와 연동되는 firehose
+# silver 레이어의 kinesis와 연동되는 firehose
 resource "aws_kinesis_firehose_delivery_stream" "silver" {
   # 이름
   name        = local.silver_firehose_name
@@ -56,6 +53,7 @@ resource "aws_kinesis_firehose_delivery_stream" "silver" {
     # S3 버킷 오류 출력 접두사
     # 현재는 에러를 단독 구성, 브론즈/실버/골드등 계층 구분 하지 x => 필요시 구성 가능
     # 경로상에 에러애 대한 타입 지정 -> 유형별로 에러가 모이게 작성
+    # [실버 수정]
     error_output_prefix = "errors/silver/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
   }
 

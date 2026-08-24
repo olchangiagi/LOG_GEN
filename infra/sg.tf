@@ -1,7 +1,8 @@
 # ecs => cloudwatch => s3, kinesis,.... , 외부 연결 x
 resource "aws_security_group" "fargate" {
-  name        = "${var.project_name}-fargate-sg"
-  description = "only fargate"
+  name = "${var.project_name}-fargate-sg"
+  # 주석 수정 => 영어
+  description = "only fargate" #"외부 연결 없이 fargate 전용"
   vpc_id      = aws_vpc.this.id
   #  ingress allow(허가) 정의 x => 모두 차단함
   tags = {

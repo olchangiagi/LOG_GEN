@@ -224,16 +224,16 @@ CloudWatch에 로그 저장
   Corruption rate : 0.05
   Tasks           : 1
   Region          : ap-northeast-2
-  Cluster         : de-ai-25-loggen-cluster
+  Cluster         : de-ai-08-loggen-cluster
 
   -----------------------------------------------------------------------------------------------------------       
   |                                                 RunTask                                                 |
   +---------------------------------------------------------------------------------------------------------+
-  |  arn:aws:ecs:ap-northeast-2:827913617635:task/de-ai-25-loggen-cluster/c79e8eb92b65483cb216e63afcee22d8  |
+  |  arn:aws:ecs:ap-northeast-2:827913617635:task/de-ai-08-loggen-cluster/c79e8eb92b65483cb216e63afcee22d8  |
   +---------------------------------------------------------------------------------------------------------+
 
 
   Task started.
   Follow generated logs:
-    aws logs tail "/ecs/de-ai-25-loggen" --follow --region "ap-northeast-2"
+    aws logs tail "/ecs/de-ai-08-loggen" --follow --region "ap-northeast-2"
 ```

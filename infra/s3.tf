@@ -3,11 +3,11 @@ resource "aws_s3_bucket" "data" {
   # 버킷 1개 구성, 하위에 브론즈, 실버, 골드 레이어 관리
   bucket = "${var.project_name}-s3-bk-${data.aws_caller_identity.current.account_id}"
 
-  # 버킷이 삭제될 때 내부 데이터도 함께 삭제? 설정
-  force_destroy = true # 저장된 객체 모두 삭제 처리(일단 구성)
+  # 버킷 삭제될때 내부 데이터도 같이 삭제되게 할것인가?
+  force_destroy = true # 저장된 객체 모두 삭제 처리 (일단 구성)
 }
 
-# 외부 public 접근 차단 (내부에서만, 권한이 있는 경우에만 접근)
+# 외부 public 접근 차단 (내부에서만, 권한 있는 경우에만 접근)
 resource "aws_s3_bucket_public_access_block" "data" {
   # 버킷 지정
   bucket = aws_s3_bucket.data.id
