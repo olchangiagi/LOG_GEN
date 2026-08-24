@@ -201,6 +201,9 @@ def main() -> None:
     # Python 함수 clean_event를 Flink SQL에서 clean_event(...) 이름으로 사용할 수 있도록 등록한다.
     # temporary system function이므로 현재 Flink Job 실행 동안만 존재한다.
 
+    # [REJECT] reject_event 함수를 sql에서 사용할 수 있게 등록
+    table_env.create_temporary_system_function("reject_event", reject_event)
+
     # ------------------------------------------------------------------
     # Source: 기존 Raw/Bronze Kinesis Stream
     # ------------------------------------------------------------------
@@ -271,6 +274,25 @@ def main() -> None:
     # Flink SQL에서는 Python None이 SQL NULL로 변환된다.
     # WHERE cleaned_payload IS NOT NULL 조건을 이용하여 잘못된 데이터는 Silver Stream에 넣지 않는다.
     # 정상적으로 정제된 JSON 문자열만 silver_stream으로 INSERT한다.
+
+    # [REJECT]
+    table_env.execute_sql(
+        # Flink SQL DDL을 실행하여 Silver Kinesis Stream을 silver_stream이라는 Sink 테이블로 등록한다.
+    
+        f"""
+        CREATE TABLE rejected_stream (
+            payload STRING
+        )
+        WITH (
+            'connector' = 'kinesis',
+            'stream.arn' = '{reject_stream_arn}',
+            'aws.region' = '{reject_region}',
+            'sink.batch.max-size' = '100',
+            'format' = 'raw'
+        )
+        """
+    )
+
     result = table_env.execute_sql(
         # 아래 INSERT INTO SQL을 실행하면 실제 Streaming Job이 시작된다.
         # bronze_stream -> 쿼리 -> 정제된 데이터 획득(cleaned_payload) -> 체킹 -> silver_stream으로 저장
