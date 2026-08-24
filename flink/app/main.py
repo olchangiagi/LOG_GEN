@@ -28,7 +28,7 @@ from pyflink.table import DataTypes, EnvironmentSettings, TableEnvironment
 from pyflink.table.udf import udf
 # 일반 Python 함수를 Flink SQL에서 호출 가능한 UDF(User Defined Function)로 등록하기 위해 사용한다.
 
-from transform import clean_event_payload
+from transform import clean_event_payload, reject_event_payload
 # 실제 JSON 정제 규칙은 transform.py에 분리되어 있으며 이 함수를 호출해 Bronze 데이터를 Silver 형태로 변환한다.
 
 
@@ -51,6 +51,11 @@ def clean_event(payload: str):
 
     return clean_event_payload(payload)
     # 실제 정제는 transform.py의 clean_event_payload()에 위임하고 그 결과를 그대로 반환한다.
+
+# [REJECT]
+@udf(result_type=DataTypes.SRING())
+def reject_event(payload: str):
+    return reject_event_payload(payload)
 
 
 def _project_dir() -> str:

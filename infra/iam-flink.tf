@@ -148,16 +148,16 @@ resource "aws_iam_role_policy" "firehose_silver" {
 
 # rejected용 데이터 파이프라인 구성을 위한 firehose role
 data "aws_iam_policy_document" "firehose_rejected_assume" {
-    statement {
-      effect  = "Allow"
-      actions = ["sts:AssumeRole"]
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
 
     principals {
       type        = "Service"
       identifiers = ["firehose.amazonaws.com"]
     }
   }
-} 
+}
 resource "aws_iam_role" "firehose_rejected" {
   name               = "${var.project_name}-firehose-rejected-role"
   assume_role_policy = data.aws_iam_policy_document.firehose_rejected_assume.json

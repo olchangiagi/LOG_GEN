@@ -179,5 +179,5 @@ Bronze Kinesis -> 배치 프로세싱을 통해 오염 데이터만 추출하여
 ## 인프라 구성
 - 인프라 구성 -> 적용
     - 대상: kinesis 신규, kinesis -> firehose(kinesisanalysis), iam, flink, locals, variables, outputs
-        - locals
 - flink 수정 -> 테스트 -> 오염 데이터를 비율 30% 상승 -> 로그 발생 -> 오염 데이터 저장 확인
+

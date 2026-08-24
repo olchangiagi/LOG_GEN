@@ -32,5 +32,5 @@ locals {
 # 리소스명 2개 구성
 locals {
   rejected_kinesis_stream_name = "${var.project_name}-rejected-kinesis"
-  rejected_firehose_name = "${var.project_name}-rejected-firehose"
+  rejected_firehose_name       = "${var.project_name}-rejected-firehose"
 }

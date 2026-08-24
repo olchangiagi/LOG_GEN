@@ -91,6 +91,16 @@ resource "aws_kinesisanalyticsv2_application" "silver" {
           "pyFiles" = "transform.py"
         }
       }
+
+      #[REJECT] rejected kinesis, flink에서 출력하는 대상
+      property_group {
+        property_group_id = "RejectStream0"
+
+        property_map = {
+          "stream.arn" = aws_kinesis_stream.rejected.arn
+          "aws.region" = var.aws_region
+        }
+      }
     }
 
     # flink 엔진 자체에 대한 설정
