@@ -6,7 +6,7 @@ resource "aws_kinesis_stream" "rejected" {
   # 리소스명 수정 
   name             = local.rejected_kinesis_stream_name
   # shard, 보과인은 별도 설정이 없어 공통 적용 -> 리소스별로 상이할 수 있음.
-  shard_count      = var.silver_kinesis_shard_count
+  shard_count      = var.rejected_kinesis_shard_count
   retention_period = var.silver_kinesis_retention_hour
 
   stream_mode_details {
@@ -28,7 +28,7 @@ resource "aws_kinesis_firehose_delivery_stream" "rejected" {
   # 입력소스 (키네시스, 역활 설정)
   kinesis_source_configuration {
     kinesis_stream_arn = aws_kinesis_stream.rejected.arn
-    role_arn           = aws_iam_role.firehose_silver.arn
+    role_arn           = aws_iam_role.firehose_rejected.arn
   }
 
   # 출력대상
@@ -53,18 +53,18 @@ resource "aws_kinesis_firehose_delivery_stream" "rejected" {
     # 아래 처럼 구성 => partition pruning => Athena/opensearch/Glue/spark등 열기반으로 데이터 추출 유용
     # S3 버킷 접두사
     # bronze/year=2026/month=08/day=20/hour=11/.. 이렇게 파티션 가능 -> 검색 속도 빨라짐
-    prefix = "silver/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    prefix = "rejected/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
 
     # S3 버킷 오류 출력 접두사
     # 현재는 에러를 단독 구성, 브론즈/실버/골드등 계층 구분 하지 x => 필요시 구성 가능
     # 경로상에 에러애 대한 타입 지정 -> 유형별로 에러가 모이게 작성
     # [실버 수정]
-    error_output_prefix = "errors/silver/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    error_output_prefix = "errors/rejected/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
   }
 
   # 의존성
   depends_on = [
     # 해당 정책 입력/출력 엑세스 권한 생성된 후에 firehose 생성되도록 설정
-    aws_iam_role_policy.firehose_silver
+    aws_iam_role_policy.firehose_rejected
   ]
 }

@@ -155,3 +155,10 @@ variable "flink_source_init_position" {
     error_message = "flink_source_init_position is only LATEST or TRIM_HORIZON"
   }
 }
+
+# rejected shard 수 
+variable "rejected_kinesis_shard_count" {
+  description = "KDS's shard count"
+  type        = number
+  default     = 1
+}
