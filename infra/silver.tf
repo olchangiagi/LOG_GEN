@@ -39,11 +39,51 @@ resource "aws_kinesis_firehose_delivery_stream" "silver" {
 
     # 데이터를 모아둔상태(버퍼링)에서 기록 -> 포멧
     # 데이터 레코드 압축
-    # compression_format = "UNCOMPRESSED" # 1차는 원본 지정, 활성화되지 않음
-    compression_format = "GZIP" # GZIP으로 압축
+    # Firehose가 JSON을 Parquet로 변환 처리, S3에 자체 압축 옵션은 UNCOMPRESSED로 표기
+    compression_format = "UNCOMPRESSED" # 1차는 원본 지정, 활성화되지 않음
+    # compression_format = "GZIP" # GZIP으로 압축
 
     # S3 버킷 및 S3 오류 출력 접두사 시간대
     custom_time_zone = "Asia/Seoul"
+
+    # [GLUE] 컨버전에 대한 구성 설정 (JSON -> GLUE Schema(사전 정의된 테이블/스키마 -> 데이터 구조/타입 -> parquet))
+    data_format_conversion_configuration {
+      # 구성 정보 사용
+      enabled = true
+
+      # 입력: flink를 통해 나온 JSON
+      input_format_configuration {
+        deserializer {
+          open_x_json_ser_de {
+            case_insensitive                         = true
+            convert_dots_in_json_keys_to_underscores = false
+          }
+        }
+      }
+
+      # JSON -> Parquet 변환시 참고할 Schema (Glue-silver.tf에 설정)
+      schema_configuration {
+        # 데이터베이스
+        database_name = aws_glue_catalog_database.silver.name
+        # 테이블
+        table_name = aws_glue_catalog_table.silver.name
+        # Role 리소스 명
+        role_arn = aws_iam_role.firehose_silver.arn
+        # 리전명
+        region = var.aws_region
+        # 버전
+        version_id = "LATEST"
+      }
+
+      # 출력: SNAPPY 압축을 통한 Parquet
+      output_format_configuration {
+        serializer {
+          parquet_ser_de {
+            compression = "SNAPPY"
+          }
+        }
+      }
+    }
 
     # 아래 처럼 구성 => partition pruning => Athena/opensearch/Glue/spark등 열기반으로 데이터 추출 유용
     # S3 버킷 접두사

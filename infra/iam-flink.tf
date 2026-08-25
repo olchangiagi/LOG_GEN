@@ -48,6 +48,17 @@ data "aws_iam_policy_document" "flink" {
       aws_kinesis_stream.silver.arn
     ]
   }
+  statement {
+    sid    = "WriteRejectKinesis"
+    effect = "Allow"
+    actions = [
+      "kinesis:PutRecord",
+      "kinesis:PutRecords"
+    ]
+    resources = [
+      aws_kinesis_stream.rejected.arn
+    ]
+  }
   # s3에 저장된 flink 어플리케이션 코드(zip 형태로 구성)
   statement {
     sid    = "ReadFlinkCode"
@@ -139,6 +150,18 @@ data "aws_iam_policy_document" "firehose_silver" {
       "${aws_s3_bucket.data.arn}/*" # 해당 버킷 이하 모든 경로
     ]
   }
+  # [GLUE] firehose가 JSON -> parquet로 변환 처리시 Glue Catalog의 schema를 조회할 수 있는 권한 부여
+  statement {
+    effect = "Allow"
+    actions = [
+      "glue:GetTable",
+      "glue:GetTableVersion",
+      "glue:GetTableVersions",
+    ]
+    resources = [
+      "*"
+    ]
+  }
 }
 resource "aws_iam_role_policy" "firehose_silver" {
   name   = "${var.project_name}-firehose-silver-s3-policy"
@@ -146,7 +169,7 @@ resource "aws_iam_role_policy" "firehose_silver" {
   policy = data.aws_iam_policy_document.firehose_silver.json
 }
 
-# rejected용 데이터 파이프라인 구성을 위한 firehose role
+# rejected용 데이터 파이프라인 구성을 위한 firehose role 작성
 data "aws_iam_policy_document" "firehose_rejected_assume" {
   statement {
     effect  = "Allow"
@@ -163,7 +186,6 @@ resource "aws_iam_role" "firehose_rejected" {
   assume_role_policy = data.aws_iam_policy_document.firehose_rejected_assume.json
 }
 data "aws_iam_policy_document" "firehose_rejected" {
-  # silver kinesis 읽기 권한 관련  
   statement {
     effect = "Allow"
     actions = [
@@ -177,7 +199,6 @@ data "aws_iam_policy_document" "firehose_rejected" {
       aws_kinesis_stream.rejected.arn
     ]
   }
-  # s3 저장 권한 관련
   statement {
     effect = "Allow"
     actions = [

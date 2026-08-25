@@ -80,7 +80,7 @@ variable "kinesis_retention_hour" {
 variable "firehose_buffer_size" {
   description = "해당 크기만큼 데이터가 쌓이면 전송"
   type        = number
-  default     = 1
+  default     = 64
 }
 
 # 0~900초 지원, 300초 권장
