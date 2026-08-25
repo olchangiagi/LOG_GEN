@@ -75,3 +75,20 @@ output "rejected_kinesis_stream_arn" {
 output "rejected_firehose_stream_name" {
   value = aws_kinesis_firehose_delivery_stream.rejected.name
 }
+
+# flink 정보 출력
+output "flink_application_name" {
+  value = aws_kinesisanalyticsv2_application.silver
+}
+output "flink_application_arn" {
+  value = aws_kinesisanalyticsv2_application.silver.arn
+}
+output "flink_application_status" {
+  value = aws_kinesisanalyticsv2_application.silver.status
+}
+output "flink_code_s3_prefix" {
+  value = "s3://${aws_s3_bucket.data.bucket}/flink/"
+}
+output "flink_log_group_name" {
+  value = aws_cloudwatch_log_group.flink
+}
