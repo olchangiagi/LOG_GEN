@@ -29,7 +29,7 @@ locals {
     gold_lambda_zip = "${path.module}/../lambda/gold/gold-lambda.zip"
 }
 
-# kinesis
+# kinesis 
 resource "aws_kinesis_stream" "gold" {
   name             = local.gold_kinesis_stream_name
   shard_count      = var.gold_kinesis_shard_count     
@@ -44,8 +44,103 @@ resource "aws_kinesis_stream" "gold" {
   }
 }
 # iam-role
+data "aws_iam_policy_document" "lambda_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
 
-# lambda
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+resource "aws_iam_role" "lambda" {
+  name = "${var.project_name}-gold-lambda-role"
+  # 위에서 만든 신뢰정책 반영하여 role 구성
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+}
+data "aws_iam_policy_document" "lambda" {
+  # 1. CloudWatch Logs에 기록
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+
+    resources = ["arn:aws:logs:${var.aws_region}:*:*"]
+  }
+  # 2. kinesis 기본 필수 권한 (silver kinesis에서 데이터를 )
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kinesis:DescribeStream",
+      "kinesis:DescribeStreamSummary",
+      "kinesis:GetRecords",
+      "kinesis:GetShardIterator",
+      "kinesis:ListShards",
+      "kinesis:ListStreams"
+    ]
+
+    resources = [aws_kinesis_stream.silver.arn]
+  }
+  # 3. kinesis 데이터 기록(집계 결과 전송)
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kinesis:PutRecord",
+      "kinesis:PutRecords"
+    ]
+
+    resources = [aws_kinesis_stream.gold.arn]
+  }
+}
+# 기존 role에 새로운 정책(여러 권한 조합)을 부여
+resource "aws_iam_role_policy" "lambda" {
+  name   = "${var.project_name}-gold-lambda-policy"
+  role   = aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.lambda.json
+}
+
+
+# Lambda
+resource "aws_lambda_function" "silver_to_gold" {
+  # 함수이름
+  function_name = local.gold_lambda_name
+  # 역활
+  role = aws_iam_role.lambda.arn
+  # 함수의 엔트리 포인트 -> 어떤 모듈의 어떤 함수를 호출하여 처리하는가
+  handler = "main.lambda_handler"
+  # 파이썬 작동 -> 서버리스 -> 환경 구성되어 있어야 함
+  runtime = "python3.12"
+  # 가동시 가용 메모리
+  memory_size = 256 # MB
+  # 처리 시간 timeout 설정
+  timeout = 30
+  # 배포한 ZIP 경로
+  filename = local.gold_lambda_zip
+  # 업데이트 감지
+  source_code_hash = filebase64sha256(local.gold_lambda_zip)
+  # 환경변수 -> lambda 함수 작동시 외부에서 전달하는 값
+  environment {
+    variables = {
+      GOLD_STREAM_NAME = aws_kinesis_stream.gold.name
+      AWS_REGION_NAME = var.aws_region
+    }
+  }
+  # 의존성
+  depends_on = [ aws_iam_role_policy.lambda ]
+  # 태그
+  tags = {
+    DataLayer = "gold"
+    Processor = "lambda"
+  }
+}
 
 # silver kinesis -> lambda 연결
 
