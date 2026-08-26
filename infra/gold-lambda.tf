@@ -1,5 +1,19 @@
 # silver kinesis -> lambda -> gold kinesis -> firehose -> s3 gold 
 # 필요한 모든 리소스, 권한 등 하나의 tf에서 구성
+
+# variables
+variable "gold_kinesis_shard_count" {
+  description = "KDS's shard count"
+  type        = number
+  default     = 1
+}
+
+variable "gold_kinesis_retention_hour" {
+  description = "KDS's retention period in hours"
+  type        = number
+  default     = 24
+}
+
 # locals
 locals {
     # Gold Kinesis 리소스 이름
@@ -16,7 +30,19 @@ locals {
 }
 
 # kinesis
+resource "aws_kinesis_stream" "gold" {
+  name             = local.gold_kinesis_stream_name
+  shard_count      = var.gold_kinesis_shard_count     
+  retention_period = var.gold_kinesis_retention_hour  
 
+  stream_mode_details {
+    stream_mode = "PROVISIONED"
+  }
+
+  tags = {
+    DataLayer = "silver"
+  }
+}
 # iam-role
 
 # lambda
