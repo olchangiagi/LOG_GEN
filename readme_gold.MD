@@ -198,6 +198,7 @@ Silver Kinesis
     - 집계, 통계 등 분석에 필요한 데이터 형태를 구성
     - lambda에서 아래처럼 데이터를 구성 or 아래처럼 데이터를 확보할 수 있게 전 단계 구성
         - Athena를 통해 최종 집계 등 데이터 조회
+```
 {
   "domain": "ecommerce",
   "category": "electronics",
@@ -210,6 +211,22 @@ Silver Kinesis
 ```
 
 # 인프라 및 코드 구성
+```
+silver-to-gold-lambda/
+├─ infra/ 
+│  ├─ gold-lambda.tf    : lambda 사용에 관련된 모든 내용 총합 세팅(로컬, 리소스, iam-role등)
+│  ├─ glue-gold.tf      : parquet 저장에 따른 glue 설정
+│  └─ outputs-gold.tf   : 출력값(신규 세팅)
+│
+├─ lambda/                  : 신규 폴더
+│  └─ gold/     
+│     ├─ main.py            : 처리 함수
+│     └─ gold-lambda.zip    : lambda에 배포할 압축 파일
+│
+├─ scripts/
+│  ├─ build-gold-lambda.bat : 빌드
+│  └─ build-gold-lambda.sh  : 빌드
+```
 - lambda/lambda_function.py 추가
 - infra/gold-lambda.py 추가
 - infra/glue-gold.py 추가
@@ -226,7 +243,9 @@ Silver Kinesis
 
 # 람다 코드 작성
 ```
-/
-L lambda
-    L lambda function.py
+
 ```
+
+# 인프라 구성
+- gold-lambda.tf
+
