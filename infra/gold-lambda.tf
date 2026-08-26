@@ -143,8 +143,27 @@ resource "aws_lambda_function" "silver_to_gold" {
 }
 
 # silver kinesis -> lambda 연결
+resource "aws_lambda_event_source_mapping" "silver_to_gold" {
+    # 읽는 대상
+    event_source_arn = aws_kinesis_stream.silver.arn
+    # 실행할 함수의 arn
+    function_name = aws_lambda_function.silver_to_gold.arn
+    # 어떤(순번) 데이터부터 읽어서 처리하는가 (LATEST, TRIM, ...)
+    starting_position = "LATEST"
+    # 한번에 lambda에서 호출하는 최대 레코드 개수
+    batch_size = 100 # 100개 읽어서 처리 (실시간보다 배치 작업성 높은 구성)
+    # 트래픽 상승에 대비하여 대기시간 부여 -> 5초 부여(테스트 후 조정)
+    maximum_batching_window_in_seconds = 5
+    # terraform 구성 이후 활성화
+    enabled = true
+    # 실패한 레코드에 대한 성공 레코드도 섞여 있을 경우, 다시 처리할 것인가? -> 처리하지 않음
+    function_response_types = [ "ReportBatchItemFailure" ]
+    # 의존성
+    depends_on = [ aws_iam_role_policy.lambda ]
+}
 
 # firehose iam role 
+
 
 # gold firehose
 
