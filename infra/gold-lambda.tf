@@ -16,24 +16,24 @@ variable "gold_kinesis_retention_hour" {
 
 # locals
 locals {
-    # Gold Kinesis 리소스 이름
-    gold_kinesis_stream_name = "${var.project_name}-gold-kinesis"
+  # Gold Kinesis 리소스 이름
+  gold_kinesis_stream_name = "${var.project_name}-gold-kinesis"
 
-    # Gold Firehose 리소스 이름
-    gold_firehose_name = "${var.project_name}-gold-firehose"
+  # Gold Firehose 리소스 이름
+  gold_firehose_name = "${var.project_name}-gold-firehose"
 
-    # Silver 데이터 -> Gold용을 구성 (집계등) 처리하는 lambda 함수명
-    gold_lambda_name = "${var.project_name}-silver-to-gold"
+  # Silver 데이터 -> Gold용을 구성 (집계등) 처리하는 lambda 함수명
+  gold_lambda_name = "${var.project_name}-silver-to-gold"
 
-    # 람다 함수 배포용 zip 경로 (terraform 업로드 처리)
-    gold_lambda_zip = "${path.module}/../lambda/gold/gold-lambda.zip"
+  # 람다 함수 배포용 zip 경로 (terraform 업로드 처리)
+  gold_lambda_zip = "${path.module}/../lambda/gold/gold-lambda.zip"
 }
 
 # kinesis 
 resource "aws_kinesis_stream" "gold" {
   name             = local.gold_kinesis_stream_name
-  shard_count      = var.gold_kinesis_shard_count     
-  retention_period = var.gold_kinesis_retention_hour  
+  shard_count      = var.gold_kinesis_shard_count
+  retention_period = var.gold_kinesis_retention_hour
 
   stream_mode_details {
     stream_mode = "PROVISIONED"
@@ -130,11 +130,11 @@ resource "aws_lambda_function" "silver_to_gold" {
   environment {
     variables = {
       GOLD_STREAM_NAME = aws_kinesis_stream.gold.name
-      AWS_REGION_NAME = var.aws_region
+      AWS_REGION_NAME  = var.aws_region
     }
   }
   # 의존성
-  depends_on = [ aws_iam_role_policy.lambda ]
+  depends_on = [aws_iam_role_policy.lambda]
   # 태그
   tags = {
     DataLayer = "gold"
@@ -144,22 +144,22 @@ resource "aws_lambda_function" "silver_to_gold" {
 
 # silver kinesis -> lambda 연결
 resource "aws_lambda_event_source_mapping" "silver_to_gold" {
-    # 읽는 대상
-    event_source_arn = aws_kinesis_stream.silver.arn
-    # 실행할 함수의 arn
-    function_name = aws_lambda_function.silver_to_gold.arn
-    # 어떤(순번) 데이터부터 읽어서 처리하는가 (LATEST, TRIM, ...)
-    starting_position = "LATEST"
-    # 한번에 lambda에서 호출하는 최대 레코드 개수
-    batch_size = 100 # 100개 읽어서 처리 (실시간보다 배치 작업성 높은 구성)
-    # 트래픽 상승에 대비하여 대기시간 부여 -> 5초 부여(테스트 후 조정)
-    maximum_batching_window_in_seconds = 5
-    # terraform 구성 이후 활성화
-    enabled = true
-    # 실패한 레코드에 대한 성공 레코드도 섞여 있을 경우, 다시 처리할 것인가? -> 처리하지 않음
-    function_response_types = [ "ReportBatchItemFailure" ]
-    # 의존성
-    depends_on = [ aws_iam_role_policy.lambda ]
+  # 읽는 대상
+  event_source_arn = aws_kinesis_stream.silver.arn
+  # 실행할 함수의 arn
+  function_name = aws_lambda_function.silver_to_gold.arn
+  # 어떤(순번) 데이터부터 읽어서 처리하는가 (LATEST, TRIM, ...)
+  starting_position = "LATEST"
+  # 한번에 lambda에서 호출하는 최대 레코드 개수
+  batch_size = 100 # 100개 읽어서 처리 (실시간보다 배치 작업성 높은 구성)
+  # 트래픽 상승에 대비하여 대기시간 부여 -> 5초 부여(테스트 후 조정)
+  maximum_batching_window_in_seconds = 5
+  # terraform 구성 이후 활성화
+  enabled = true
+  # 실패한 레코드에 대한 성공 레코드도 섞여 있을 경우, 다시 처리할 것인가? -> 처리하지 않음
+  function_response_types = ["ReportBatchItemFailure"]
+  # 의존성
+  depends_on = [aws_iam_role_policy.lambda]
 }
 
 # firehose iam role 
@@ -175,7 +175,7 @@ data "aws_iam_policy_document" "firehose_gold_assume" {
   }
 }
 resource "aws_iam_role" "firehose_gold" {
-  name = "${var.project_name}-gold-firehose-role"
+  name               = "${var.project_name}-gold-firehose-role"
   assume_role_policy = data.aws_iam_policy_document.firehose_assume.json
 }
 data "aws_iam_policy_document" "firehose_gold" {
@@ -200,8 +200,8 @@ data "aws_iam_policy_document" "firehose_gold" {
       "s3:PutObject"
     ]
     resources = [
-      aws_s3_bucket.data.arn,      
-      "${aws_s3_bucket.data.arn}/*" 
+      aws_s3_bucket.data.arn,
+      "${aws_s3_bucket.data.arn}/*"
     ]
   }
   statement {
@@ -222,15 +222,15 @@ resource "aws_iam_role_policy" "firehose_gold" {
   policy = data.aws_iam_policy_document.firehose_gold.json
 }
 
-resource "aws_kinesis_firehose_delivery_stream" "logs" {
+resource "aws_kinesis_firehose_delivery_stream" "gold" {
   # 이름
   name        = local.firehose_name
   destination = "extended_s3"
 
   # 입력소스 (키네시스, 역활 설정)
   kinesis_source_configuration {
-    kinesis_stream_arn = aws_kinesis_stream.logs.arn
-    role_arn           = aws_iam_role.firehose.arn
+    kinesis_stream_arn = aws_kinesis_stream.gold.arn
+    role_arn           = aws_iam_role.firehose_gold.arn
   }
 
   # 출력대상
@@ -238,31 +238,51 @@ resource "aws_kinesis_firehose_delivery_stream" "logs" {
     # 버킷
     bucket_arn = aws_s3_bucket.data.arn
     # 역활
-    role_arn = aws_iam_role.firehose.arn
+    role_arn = aws_iam_role.firehose_gold.arn
 
     # 버퍼 관련 용량, 시간 설정
     buffering_size     = var.firehose_buffer_size     # 1Mib
     buffering_interval = var.firehose_buffer_interval # 60초
 
-    # 데이터를 모아둔상태(버퍼링)에서 기록 -> 포멧
-    # 데이터 레코드 압축
-    # compression_format = "UNCOMPRESSED" # 1차는 원본 지정, 활성화되지 않음
-    compression_format = "GZIP" # GZIP으로 압축
+    compression_format = "UNCOMPRESSED" # 1차는 원본 지정, 활성화되지 않음
 
     # S3 버킷 및 S3 오류 출력 접두사 시간대
     custom_time_zone = "Asia/Seoul"
 
-    # 아래 처럼 구성 => partition pruning => Athena/opensearch/Glue/spark등 열기반으로 데이터 추출 유용
-    # S3 버킷 접두사
-    # bronze/year=2026/month=08/day=20/hour=11/.. 이렇게 파티션 가능 -> 검색 속도 빨라짐
-    prefix = "bronze/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    prefix              = "gold/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    error_output_prefix = "errors/gold/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
 
-    # S3 버킷 오류 출력 접두사
-    # 현재는 에러를 단독 구성, 브론즈/실버/골드등 계층 구분 하지 x => 필요시 구성 가능
-    # 경로상에 에러애 대한 타입 지정 -> 유형별로 에러가 모이게 작성
-    # [실버 수정]
-    error_output_prefix = "errors/bronze/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/hour=!{timestamp:HH}/"
+    # parquet 구성
+    data_format_conversion_configuration {
+      # 구성 정보 사용
+      enabled = true
+      input_format_configuration {
+        # ser_de (serializer/deserializer)
+        deserializer {
+          open_x_json_ser_de {
+            case_insensitive                         = false
+            convert_dots_in_json_keys_to_underscores = false
+          }
+        }
+      }
+      schema_configuration {
+        database_name = aws_glue_catalog_database.gold.name
+        table_name    = aws_glue_catalog_table.gold.name
+        role_arn      = aws_iam_role.firehose_gold.arn
+        region        = var.aws_region
+        version_id    = "LATEST"
+      }
+      output_format_configuration {
+        serializer {
+          parquet_ser_de {
+            compression                   = "SNAPPY"
+            enable_dictionary_compression = true
+          }
+        }
+      }
+    }
   }
+
 
   # 의존성
   depends_on = [
