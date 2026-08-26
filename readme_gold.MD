@@ -242,8 +242,10 @@ silver-to-gold-lambda/
     - s3에 무언가 업로드(소카 서비스 이용 후 차량 촬영 후 업로드) -> 트리거 작동 -> lambda 작동 -> 사진 전처리/분석 행위 -> 결과를 SQS 전송 -> gold 도달 -> 고객 앱으로 전달
 
 # 람다 코드 작성
-```
 
+# 람다 코드 빌드
+```
+scripts/build-gold-lambda.bat
 ```
 
 # 인프라 구성

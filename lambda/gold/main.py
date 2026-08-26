@@ -37,6 +37,9 @@ kinesis = boto3.client("kinesis", region_name=AWS_REGION)
 
 
 def _decode_kinesis_record(record: dict[str, Any]) -> dict[str, Any]:
+    '''
+    람다에 전달된 event(데이터 1개)를 json 객체로 복원(역직렬화)
+    '''
     encoded = record["kinesis"]["data"]
 
     payload = base64.b64decode(encoded).decode("utf-8")
@@ -44,8 +47,10 @@ def _decode_kinesis_record(record: dict[str, Any]) -> dict[str, Any]:
     value = json.loads(payload)
 
     if not isinstance(value, dict):
+        # 형식에 문제가 발생 -> 오류 반환
         raise ValueError("Silver payload must be a JSON object.")
-
+    
+    # dict 객체 반환 
     return value
 
 
@@ -188,16 +193,20 @@ def _put_gold_records(records: list[dict[str, Any]]) -> None:
         )
 
 
+# 엔트리 포인트
 def lambda_handler(
     event: dict[str, Any],
     context: Any,
 ) -> dict[str, Any]:
+    # 정상적으로 처리된 silver 데이터 저장 공간
     silver_events: list[dict[str, Any]] = []
-
+    # 응답 실패용 저장 공간
     batch_failures: list[dict[str, str]] = []
+    # event는 kinesis로 부터 흘러들어오는 각각의 데이터를 의미함
 
     for record in event.get("Records", []):
         try:
+            # 정상 데이터로 판단하고 추가 -> 오류 발생 -> 예외 처리 -> batch_failures 저장
             silver_events.append(
                 _decode_kinesis_record(record)
             )
@@ -214,7 +223,7 @@ def lambda_handler(
                         "itemIdentifier": sequence_number
                     }
                 )
-
+            # 로그 -> CloudWatch에서 조회 가능
             print(
                 f"[WARN] Failed to decode Silver record: {exc}"
             )
