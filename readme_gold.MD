@@ -251,3 +251,5 @@ scripts/build-gold-lambda.bat
 # 인프라 구성
 - gold-lambda.tf
 
+# 로그 발생
+scripts\run-generator.bat ecommerce 300 10 0.03 1 ap-northeast-2 1
