@@ -24,9 +24,9 @@ from typing import Any
 
 import boto3
 
-
+# gold kinesis의 이름 - 테라폼에서 환경변수로 전달
 GOLD_STREAM_NAME = os.environ["GOLD_STREAM_NAME"]
-
+# 기본 리전까지 추가하여 전달
 AWS_REGION = os.environ.get("AWS_REGION_NAME") or os.environ.get(
     "AWS_REGION", "ap-northeast-2"
 )
@@ -163,29 +163,41 @@ def _aggregate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _put_gold_records(records: list[dict[str, Any]]) -> None:
+    '''
+    최종 가공된 데이터를 gold layer로 보내기 위해, gold kinesis로 전송
+    '''
+    # 내용이 비어있으면 컷
     if not records:
         return
 
+    # kinesis에 전송 가능한 형태로 가공
     request_records = [
+        # 리스트 컴프리 핸선으로 [ {}, {}, {}, ... ]
         {
             "Data": (
+                # 직렬화 처리 dict -> 문자열 변환
                 json.dumps(
                     record,
-                    ensure_ascii=False,
-                    separators=(",", ":"),
+                    ensure_ascii=False,     # 아스키가 아니먄 한글, 기호 그대로 표기
+                    separators=(",", ":"),  # 구분자 변경
                 )
+                # jsonl을 고려하여 줄바꿈 추가
                 + "\n"
             ).encode("utf-8"),
+            # 같은 도메인을 가진 데이터는 같은 shard로 전달할 수 있게 파티션화
+            # event_type을 사용 -> 같은 이벤트는 같은 shard로 전달 -> 확장 가능
             "PartitionKey": record["domain"],
         }
         for record in records
     ]
 
+    # 전송
     response = kinesis.put_records(
         StreamName=GOLD_STREAM_NAME,
         Records=request_records,
     )
 
+    # 전송시 실패하면 오류 발생 -> 로그에 기록됨
     if response.get("FailedRecordCount", 0):
         raise RuntimeError(
             f"Failed to write "
@@ -204,20 +216,23 @@ def lambda_handler(
     batch_failures: list[dict[str, str]] = []
     # event는 kinesis로 부터 흘러들어오는 각각의 데이터를 의미함
 
+    # 이벤트(데이터 1개 획득) -> n번 반복 -> [ {}, {}, {}, ...]
     for record in event.get("Records", []):
         try:
             # 정상 데이터로 판단하고 추가 -> 오류 발생 -> 예외 처리 -> batch_failures 저장
             silver_events.append(
                 _decode_kinesis_record(record)
             )
-
+        
         except Exception as exc:
+            # kinesis가 전달한 데이터의 sequenceNumber만 획득
             sequence_number = (
                 record.get("kinesis", {})
                 .get("sequenceNumber")
             )
 
             if sequence_number:
+                # 해당 시퀀스 번호가 있으면 저장 -> kinesis에서 조회 가능
                 batch_failures.append(
                     {
                         "itemIdentifier": sequence_number
@@ -227,11 +242,13 @@ def lambda_handler(
             print(
                 f"[WARN] Failed to decode Silver record: {exc}"
             )
-
+    # 정상 데이터만 대상으로 집계 (gold에서 최종 데이터 형태가 집계/통계형) 처리
     gold_records = _aggregate(silver_events)
 
+    # 최종 데이터(silver 데이터를 비즈니스 목적에 맞게 처리)를 gold kinesis 전송
     _put_gold_records(gold_records)
 
+    # 로그
     print(
         json.dumps(
             {
@@ -243,6 +260,7 @@ def lambda_handler(
         )
     )
 
+    # 반환
     return {
         "batchItemFailures": batch_failures
     }
