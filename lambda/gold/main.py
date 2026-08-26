@@ -91,6 +91,11 @@ def _is_success(event: dict[str, Any]) -> bool:
 
 
 def _aggregate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    '''
+    silver 이벤트(데이터)를 domain 단위로 Gold 지표에 집계하여 데이터 구성
+    비즈니스 목적에 맞게 데이터 가공
+    '''
+    # 도메인별 기본 틀을 제공하는 형태의 변수 정의
     groups: dict[str, dict[str, Any]] = defaultdict(
         lambda: {
             "event_count": 0,
@@ -101,6 +106,7 @@ def _aggregate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
     for event in records:
+        # 도메인 획득 -> 공백 제거, 소문자 정제 과정
         domain = str(event.get("domain") or "unknown").strip().lower()
 
         group = groups[domain]
@@ -123,8 +129,9 @@ def _aggregate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     processed_at = datetime.now(timezone.utc).isoformat()
 
     output: list[dict[str, Any]] = []
-
+    # 도메인별로 세팅 -> 현재는 이커머스만 존재
     for domain, group in sorted(groups.items()):
+        # 응답 시간 집계 게산
         latencies = group["latencies"]
 
         avg_latency = (
@@ -136,6 +143,7 @@ def _aggregate(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         min_latency = int(min(latencies)) if latencies else 0
         max_latency = int(max(latencies)) if latencies else 0
 
+        # 결과 판단
         if group["error_count"] == 0:
             result = "success"
         elif group["success_count"] == 0:

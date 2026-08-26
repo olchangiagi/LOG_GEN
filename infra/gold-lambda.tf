@@ -157,7 +157,7 @@ resource "aws_lambda_event_source_mapping" "silver_to_gold" {
   # terraform 구성 이후 활성화
   enabled = true
   # 실패한 레코드에 대한 성공 레코드도 섞여 있을 경우, 다시 처리할 것인가? -> 처리하지 않음
-  function_response_types = ["ReportBatchItemFailure"]
+  function_response_types = ["ReportBatchItemFailures"]
   # 의존성
   depends_on = [aws_iam_role_policy.lambda]
 }
@@ -224,7 +224,7 @@ resource "aws_iam_role_policy" "firehose_gold" {
 
 resource "aws_kinesis_firehose_delivery_stream" "gold" {
   # 이름
-  name        = local.firehose_name
+  name        = local.gold_firehose_name
   destination = "extended_s3"
 
   # 입력소스 (키네시스, 역활 설정)
